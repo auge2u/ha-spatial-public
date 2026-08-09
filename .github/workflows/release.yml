@@ -1,0 +1,47 @@
+# Deployed to auge2u/ha-spatial-public/.github/workflows/release.yml by the
+# "Mirror release to public distribution repo" step in this repo's release
+# workflow. Edit it HERE — changes land on the next mirrored release.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Package and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify manifest version matches tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          MANIFEST_VERSION=$(jq -r '.version' custom_components/ha_spatial/manifest.json)
+          echo "tag=$VERSION manifest=$MANIFEST_VERSION"
+          test "$MANIFEST_VERSION" = "$VERSION"
+
+      # HACS zip: integration files at the archive root (HACS extracts it into
+      # custom_components/ha_spatial/ itself). Versioned zip: nested under
+      # custom_components/ for manual extraction into an HA config directory.
+      - name: Package zips
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          (cd custom_components/ha_spatial && zip -qr "$GITHUB_WORKSPACE/ha-spatial.zip" . -x '*__pycache__*')
+          zip -qr "ha-spatial-v$VERSION.zip" custom_components -x '*__pycache__*'
+          unzip -l ha-spatial.zip | head -5
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          gh release create "$GITHUB_REF_NAME" \
+            --title "HA Spatial v$VERSION" \
+            --notes "HA Spatial v$VERSION — HACS installs from \`ha-spatial.zip\`; for manual installs extract \`ha-spatial-v$VERSION.zip\` into your Home Assistant config directory." \
+            ha-spatial.zip \
+            "ha-spatial-v$VERSION.zip"
