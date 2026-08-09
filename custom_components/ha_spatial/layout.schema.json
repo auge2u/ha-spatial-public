@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/auge2u/ha-forge-vista/custom_components/ha_spatial/layout.schema.json",
+  "title": "HA Spatial Home Layout",
+  "description": "Canonical persisted/wire contract for a spatial home layout. Frozen at v1 by the 2026-06 eng review. Validated by BOTH the Python integration and the TypeScript panel (decision 4A). Conventions: snake_case keys (HA-native, matches area_id/floor_id/entity_id); all coordinates in real-world METERS; entity placements are a GLOBAL array each optionally linked to a room via room_id (decision T2, no mapping table); calibration is a distance-pair, never pixel-based.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "rooms", "placements", "created_at", "updated_at"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "version": {
+      "const": 1,
+      "description": "Schema version. Bumped only with a matching Store async_migrate_func (decision 4A)."
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Provenance of how real-world scale was established. Geometry is already stored in meters; this records the reference used so the model can be re-calibrated. Distance-pair (real vs measured), never pixel_scale.",
+      "required": ["real_world_distance", "measured_distance"],
+      "properties": {
+        "reference_entity": { "type": "string" },
+        "real_world_distance": { "type": "number", "finite": true, "exclusiveMinimum": 0 },
+        "measured_distance": { "type": "number", "finite": true, "exclusiveMinimum": 0 }
+      }
+    },
+    "rooms": { "type": "array", "items": { "$ref": "#/$defs/room" } },
+    "placements": { "type": "array", "items": { "$ref": "#/$defs/placement" } },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "point2d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "finite": true },
+        "y": { "type": "number", "finite": true }
+      }
+    },
+    "point3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "finite": true },
+        "y": { "type": "number", "finite": true },
+        "z": { "type": "number", "finite": true }
+      }
+    },
+    "room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "area_id", "floor_id", "floor_level", "polygon", "height"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "area_id": {
+          "type": ["string", "null"],
+          "description": "HA area registry link (decision 2A/T2). null = not yet linked. This IS the room↔area mapping; there is no separate mapping table."
+        },
+        "floor_id": {
+          "type": ["string", "null"],
+          "description": "HA floor registry link (decision 3A). null = unassigned."
+        },
+        "floor_level": {
+          "type": "integer",
+          "description": "Geometric storey index / render height-offset (decision 3A). Distinct from floor_id."
+        },
+        "polygon": {
+          "type": "array",
+          "minItems": 3,
+          "description": "Wall polygon, top-down, in meters. Structural minimum is 3 points; semantic checks (no self-intersection, closed-ring normalization) are enforced by the WS boundary validator, decision 8A.",
+          "items": { "$ref": "#/$defs/point2d" }
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Ceiling height in meters."
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y"],
+          "description": "Room's local (0,0) position in the shared home frame, in meters. Absent = identity (room renders at origin).",
+          "properties": {
+            "x": { "type": "number", "finite": true },
+            "y": { "type": "number", "finite": true }
+          }
+        },
+        "rotation": {
+          "type": "number",
+          "finite": true,
+          "description": "Rotation of the room's local frame about its local origin, in degrees. Absent = identity."
+        },
+        "orphaned": {
+          "type": "boolean",
+          "description": "Tombstone flag (decision 2A). true when the linked HA area was deleted; geometry is retained and the room is restorable."
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "wall_thickness": { "type": "number", "exclusiveMinimum": 0 },
+            "has_sloped_ceiling": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "room_id", "position", "rotation", "mount_type"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "HA entity id, e.g. light.living_ceiling."
+        },
+        "room_id": {
+          "type": ["string", "null"],
+          "description": "Optional direct link to a room (decision T2). null = placed but unassigned to a room."
+        },
+        "position": {
+          "$ref": "#/$defs/point3d",
+          "description": "Room-local position in meters. Resolved to world coordinates via the linked room's origin/rotation transform."
+        },
+        "rotation": {
+          "type": "number",
+          "description": "Degrees about the vertical (Y) axis."
+        },
+        "mount_type": {
+          "enum": ["floor", "wall", "ceiling"]
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
