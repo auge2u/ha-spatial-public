@@ -182,6 +182,7 @@ def async_register_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_validate)
     websocket_api.async_register_command(hass, ws_create_room)
     websocket_api.async_register_command(hass, ws_update_geometry)
+    websocket_api.async_register_command(hass, ws_delete_room)
     websocket_api.async_register_command(hass, ws_place_entity)
     websocket_api.async_register_command(hass, ws_calibrate)
     websocket_api.async_register_command(hass, ws_log_event)
@@ -708,6 +709,44 @@ async def ws_update_geometry(
             connection.send_error(msg["id"], "invalid_rotation", "rotation must be finite")
             return
         room["rotation"] = msg["rotation"]
+    connection.send_result(msg["id"], await store.async_save(layout))
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "ha_spatial/room/delete",
+        vol.Required("room_id"): str,
+        vol.Optional("expected_updated_at"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_delete_room(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Delete a room and its entity placements (admin only).
+
+    The linked HA area is untouched — the spatial room is a layer over the
+    registry, not its owner. Placements require a room_id (schema v1), so the
+    room takes its placements with it rather than leaving invalid orphans.
+    """
+    store = _get_store(hass)
+    if store is None:
+        connection.send_error(msg["id"], "not_loaded", "HA Spatial is not set up")
+        return
+    if not _rate_limit_or_error(hass, connection, msg):
+        return
+    layout = copy.deepcopy(store.async_get())
+    if _check_stale(msg, layout):
+        connection.send_error(msg["id"], "stale_version", "layout changed since last read")
+        return
+    if not any(r["id"] == msg["room_id"] for r in layout["rooms"]):
+        connection.send_error(msg["id"], "unknown_room", f"no room {msg['room_id']}")
+        return
+    layout["rooms"] = [r for r in layout["rooms"] if r["id"] != msg["room_id"]]
+    layout["placements"] = [
+        p for p in layout.get("placements", []) if p.get("room_id") != msg["room_id"]
+    ]
     connection.send_result(msg["id"], await store.async_save(layout))
 
 
