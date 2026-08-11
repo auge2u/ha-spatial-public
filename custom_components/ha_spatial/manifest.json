@@ -3,11 +3,18 @@
   "name": "HA Spatial",
   "documentation": "https://github.com/auge2u/ha-spatial-public",
   "issue_tracker": "https://github.com/auge2u/ha-spatial-public/issues",
-  "dependencies": ["http", "websocket_api"],
-  "after_dependencies": ["frontend"],
-  "codeowners": ["@auge2u"],
+  "dependencies": [
+    "http",
+    "websocket_api"
+  ],
+  "after_dependencies": [
+    "frontend"
+  ],
+  "codeowners": [
+    "@auge2u"
+  ],
   "iot_class": "local_push",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "requirements": [],
   "config_flow": true,
   "homeassistant": "2025.5.0"
