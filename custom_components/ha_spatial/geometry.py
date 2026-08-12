@@ -167,27 +167,49 @@ def polygon_bounds(
     return {"min_x": min(xs), "max_x": max(xs), "min_y": min(ys), "max_y": max(ys)}
 
 
+_CASCADE_WRAP_W = 24.0  # meters; wrap the shelf so homes pack roughly square
+# (matches _CASCADE_WRAP_W in floorplan-render.ts)
+
+
 def cascade_offset(
     new_polygon: Sequence[Point2D],
     existing_rooms: Sequence[Mapping[str, Any]],
     gap: float = _CASCADE_GAP,
 ) -> dict[str, float]:
-    """Compute an origin that places a new room to the right of existing rooms.
+    """Compute an origin that places a new room on a wrapping shelf.
 
-    Uses the axis-aligned bounds of the existing same-floor rooms and adds a
-    horizontal gap. Floor scoping is the caller's responsibility; this helper
-    sees only the rooms passed to it.
+    Rooms fill a row to the right until the shelf would exceed
+    ``_CASCADE_WRAP_W`` meters, then wrap to a new row below everything —
+    an endless single row made a many-room home a ~100 m strip that forced
+    the viewport fit to shrink every room into unreadability. Floor scoping
+    is the caller's responsibility; this helper sees only the rooms passed
+    to it.
     """
     if not existing_rooms:
         return {"x": 0.0, "y": 0.0}
-    max_x = max(
-        polygon_bounds(
-            r["polygon"], r.get("origin"), r.get("rotation", 0.0)
-        )["max_x"]
+    bounds = [
+        polygon_bounds(r["polygon"], r.get("origin"), r.get("rotation", 0.0))
         for r in existing_rooms
-    )
+    ]
     new_local = polygon_bounds(new_polygon)
-    return {"x": max_x + gap - new_local["min_x"], "y": 0.0}
+    new_w = new_local["max_x"] - new_local["min_x"]
+    min_x = min(b["min_x"] for b in bounds)
+    # The current shelf: rooms sharing the vertical band of the lowest-starting
+    # room (the most recently wrapped row).
+    anchor_min_y = max(b["min_y"] for b in bounds)
+    shelf = [b for b in bounds if b["max_y"] > anchor_min_y]
+    shelf_max_x = max(b["max_x"] for b in shelf)
+    shelf_min_y = min(b["min_y"] for b in shelf)
+    if (shelf_max_x + gap + new_w) - min_x <= _CASCADE_WRAP_W:
+        return {
+            "x": shelf_max_x + gap - new_local["min_x"],
+            "y": shelf_min_y - new_local["min_y"],
+        }
+    max_y = max(b["max_y"] for b in bounds)
+    return {
+        "x": min_x - new_local["min_x"],
+        "y": max_y + gap - new_local["min_y"],
+    }
 
 
 def validate_layout_geometry(layout: Mapping) -> None:
