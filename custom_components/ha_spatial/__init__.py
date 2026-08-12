@@ -53,8 +53,11 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
         "scene_store": scene_store,
     }
 
-    # Forward to our scene platform AFTER stashing scene_store (scene.py reads it).
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SCENE])
+    # Forward platforms AFTER stashing entry data (scene.py reads scene_store;
+    # update.py stashes its release coordinator back into the same dict).
+    await hass.config_entries.async_forward_entry_setups(
+        entry, [Platform.SCENE, Platform.UPDATE]
+    )
 
     async_register_api(hass)
     await async_register_panel(hass)
@@ -67,7 +70,9 @@ async def async_unload_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> boo
 
     from .panel import async_unregister_panel
 
-    await hass.config_entries.async_unload_platforms(entry, [Platform.SCENE])
+    await hass.config_entries.async_unload_platforms(
+        entry, [Platform.SCENE, Platform.UPDATE]
+    )
     entry_data = hass.data[DOMAIN].pop(entry.entry_id, None)
     if entry_data:
         if (sync := entry_data.get("sync")) is not None:

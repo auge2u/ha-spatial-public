@@ -30,7 +30,7 @@ from homeassistant.helpers import (
     floor_registry as fr,
 )
 
-from .const import CONF_VISION_PROVIDER, DEFAULT_VISION_PROVIDER, DOMAIN, FUNNEL_EVENTS, MOUNT_TYPES
+from .const import CONF_VISION_PROVIDER, DEFAULT_VISION_PROVIDER, DOMAIN, FUNNEL_EVENTS, MOUNT_TYPES, _manifest_version
 from .geometry import GeometryError, cascade_offset, validate_room_polygon
 from .reconcile import resolve_effective_areas
 from .roomplan_import import RoomPlanImportError, parse_roomplan_import
@@ -178,6 +178,7 @@ def async_register_api(hass: HomeAssistant) -> None:
     """Register the WS commands once per hass."""
     if hass.data.setdefault(DOMAIN, {}).get(_API_REGISTERED):
         return
+    websocket_api.async_register_command(hass, ws_info)
     websocket_api.async_register_command(hass, ws_get_layout)
     websocket_api.async_register_command(hass, ws_validate)
     websocket_api.async_register_command(hass, ws_create_room)
@@ -196,6 +197,47 @@ def async_register_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_create_suggested_rooms)
     websocket_api.async_register_command(hass, ws_roomplan_import)
     hass.data[DOMAIN][_API_REGISTERED] = True
+
+
+@websocket_api.websocket_command({vol.Required("type"): "ha_spatial/info"})
+@callback
+def ws_info(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Installed version + latest published release (any authenticated user).
+
+    The panel compares its own baked bundle version against `version` to
+    detect a stale browser tab, and shows `update_available` so users learn
+    about new releases without relying on HACS's cached release scan.
+    """
+    version = _manifest_version()
+    latest: str | None = None
+    release_url: str | None = None
+    for entry_data in hass.data.get(DOMAIN, {}).values():
+        if isinstance(entry_data, dict) and (
+            coordinator := entry_data.get("release_coordinator")
+        ):
+            data = coordinator.data or {}
+            latest = data.get("latest")
+            release_url = data.get("url")
+            break
+    update_available = False
+    if latest:
+        try:
+            from awesomeversion import AwesomeVersion
+
+            update_available = AwesomeVersion(latest) > AwesomeVersion(version)
+        except Exception:  # noqa: BLE001 — a weird tag must never break info
+            update_available = False
+    connection.send_result(
+        msg["id"],
+        {
+            "version": version,
+            "latest_version": latest,
+            "release_url": release_url,
+            "update_available": update_available,
+        },
+    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): "ha_spatial/layout/get"})
