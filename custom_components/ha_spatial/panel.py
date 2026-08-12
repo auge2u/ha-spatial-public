@@ -64,11 +64,14 @@ async def async_register_panel(hass: "HomeAssistant") -> None:
         return
 
     static_dir = os.path.join(os.path.dirname(__file__), "www")
+    # The bundle manifest is read from disk, so it goes to the executor — a
+    # plain open() here trips HA's blocking-call detector during setup.
+    module_url = await hass.async_add_executor_job(_panel_js_url, static_dir)
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name=PANEL_WEBCOMPONENT,
-        module_url=_panel_js_url(static_dir),
+        module_url=module_url,
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         require_admin=PANEL_REQUIRE_ADMIN,

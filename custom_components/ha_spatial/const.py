@@ -18,13 +18,25 @@ PANEL_WEBCOMPONENT = "ha-spatial-panel"
 PANEL_STATIC_URL = "/ha_spatial_static"
 
 
-def _manifest_version() -> str:
+def _read_manifest_version() -> str:
     manifest = os.path.join(os.path.dirname(__file__), "manifest.json")
     try:
         with open(manifest, encoding="utf-8") as f:
             return json.load(f).get("version", "dev")
     except Exception:
         return "dev"
+
+
+# Read ONCE at module import. HA imports custom integrations in an executor
+# thread, so this file read happens off the event loop; every later caller
+# (update entity, ha_spatial/info, panel registration) gets the cached string
+# with no I/O. Reading it lazily instead trips HA's blocking-call detector.
+MANIFEST_VERSION = _read_manifest_version()
+
+
+def _manifest_version() -> str:
+    """The integration version from manifest.json (cached at import)."""
+    return MANIFEST_VERSION
 
 
 PANEL_TITLE = "HA Spatial"
