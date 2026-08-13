@@ -12,11 +12,25 @@ mirrored release snapshots. Consequences that shape every task here:
   Don't invent `pytest`/`npm test` invocations; nothing backs them. The private repo has the
   harness (~170 tests) and the Vite build.
 - **`custom_components/ha_spatial/www/*.js` are build artifacts.** Never hand-edit them.
-- **`.github/workflows/release.yml` is itself mirrored** — its own header says to edit it in
-  the private repo, because the next mirrored release overwrites it here.
-- Practically: a fix made *only* in this repo gets clobbered by the next release mirror.
-  Real changes belong upstream, then flow down. If you're asked to fix something here,
-  say so and offer to port it.
+- **Which files the mirror overwrites is precise** — see below. Anything it does own must be
+  changed upstream, or the next release silently reverts it. If you're asked to fix something
+  in mirrored territory, say so and offer to port it.
+
+### What the release mirror owns
+
+Each release, a step in the private repo's `release.yml` clones this repo and rewrites
+exactly three paths, then commits and pushes **straight to `main`** (as `github-actions[bot]`,
+plus a tag — no PR, so `main` can move under you mid-task; `git fetch` before starting):
+
+| Path | How | Consequence |
+|---|---|---|
+| `custom_components/ha_spatial/` | `rsync -a --delete` | fully replaced; **files added here are erased** |
+| `hacs.json` | `cp` | overwritten |
+| `.github/workflows/release.yml` | `cp` from upstream `.github/public/release.yml` | overwritten — editing this copy is futile |
+
+Everything else survives untouched, including this file and `README.md`. Note `--delete` is
+scoped to the integration directory: root-level files are safe, but a new module dropped into
+`custom_components/ha_spatial/` without an upstream counterpart disappears on the next release.
 
 ### Release mechanics
 
