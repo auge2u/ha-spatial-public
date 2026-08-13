@@ -641,7 +641,6 @@ async def ws_create_room(
         return
     if not _rate_limit_or_error(hass, connection, msg):
         return
-        return
     layout = copy.deepcopy(store.async_get())
     if _check_stale(msg, layout):
         connection.send_error(msg["id"], "stale_version", "layout changed since last read")
