@@ -32,6 +32,20 @@ _IGNORED_TOKENS = {
     "alarm", "tamper", "water", "gas", "heat", "cold", "index", "number",
     "channel", "volume", "source", "media", "player", "receiver", "remote",
     "usb", "bluetooth", "thread", "mesh", "node", "bridge", "hub", "dongle",
+    # Backup / scheduler machinery. A stock HA ships several
+    # sensor.backup_last_*_automatic_backup entities, and because they live in
+    # the room-plausible `sensor` domain nothing else filters them — they were
+    # enough on their own to offer "Backup", "Automatic" and "Last" as rooms on
+    # a first-run install (observed in a live 0.8.10 instance).
+    "backup", "automatic", "scheduled", "attempted", "successful", "manager",
+    "next", "last", "previous", "schedule", "timer", "interval",
+    # Home Assistant's own surfaces: conversation.home_assistant, zone.home,
+    # todo.shopping_list, person.*, tts.google_translate_*.
+    "home", "assistant", "conversation", "todo", "shopping", "list", "person",
+    "admin", "user", "owner", "analytics", "cloud", "supervisor", "addon",
+    "tts", "stt", "assist", "pipeline", "google", "translate", "com",
+    # This integration's own entities (update.ha_spatial_update).
+    "spatial",
 }
 
 # Area names that are typically NOT rooms. An area with one of these names
