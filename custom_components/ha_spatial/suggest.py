@@ -27,6 +27,9 @@ _IGNORED_TOKENS = {
     # Structural / positional descriptors (not room names).
     "ceiling", "wall", "floor", "level", "main", "master", "upper", "lower",
     "front", "back", "left", "right", "north", "south", "east", "west",
+    # Storey names. These identify a floor, not a room, and belong with
+    # upper/lower above (vacuum.demo_vacuum_0_ground_floor -> "Ground").
+    "ground", "first", "second", "third", "fourth", "fifth", "storey", "story",
     # HA state/attribute words that leak into entity names.
     "color", "brightness", "speed", "mode", "state", "value", "reading",
     "alarm", "tamper", "water", "gas", "heat", "cold", "index", "number",
@@ -36,6 +39,26 @@ _IGNORED_TOKENS = {
     # ride on placed entities and so survives the structural filter below:
     # light.home_office_desk would otherwise suggest both "Home" and "Office".
     "home",
+    # Bare "room" is not a room name. `<word>_room` is merged into one token by
+    # _entity_tokens, so this only ever rejects a dangling one.
+    "room",
+    # HA domain names. A token equal to a domain is a device category by
+    # construction — vacuum.demo_vacuum_0_ground_floor offered "Vacuum" as a
+    # room. Domains already covered above (light, switch, sensor, ...) are not
+    # repeated. Plurals are handled by _singularize, so these stay singular.
+    "vacuum", "camera", "valve", "siren", "humidifier", "heater", "button",
+    "event", "calendar", "image", "select", "date", "datetime", "counter",
+    "todo", "conversation", "person", "assist", "notify", "backup", "tts",
+    "stt", "mower", "text", "time",
+    # Platform / demo scaffolding that ships with test and showcase setups.
+    "demo", "example", "mock", "test", "sample", "dummy",
+    # Energy and solar plumbing. Not places.
+    "solar", "grid", "inverter", "meter", "consumption", "production",
+    "tariff", "compensation", "percentage", "limited", "preset", "only",
+    # Sun / almanac state words (binary_sensor.sun_solar_rising offered
+    # "Rising"). Same family as the state words above.
+    "rising", "falling", "setting", "dawn", "dusk", "noon", "midnight",
+    "above", "below", "horizon", "azimuth", "elevation",
 }
 
 # Domains whose entities are physically installed somewhere in the home. A
@@ -79,6 +102,11 @@ _NON_ROOM_AREA_NAMES = {
     "technical", "electrical", "mechanical",
 }
 
+# The same vocabulary as exact tokens, for _is_room_token. _NON_ROOM_AREA_NAMES
+# is matched as a substring against area names (hence the leading space on
+# " closet"), so it is stripped here for exact token comparison.
+_NON_ROOM_TOKENS = frozenset(name.strip() for name in _NON_ROOM_AREA_NAMES)
+
 
 def _normalize_name(raw: str) -> str:
     """Turn a token into a displayable room name."""
@@ -112,18 +140,57 @@ def _entity_tokens(entity_id: str) -> list[str]:
 
     light.kitchen_ceiling -> ['kitchen', 'ceiling']
     light.living_room_lamp -> ['living_room', 'lamp']
+
+    A token immediately followed by "room" merges with it, so the single most
+    common shape of English room name survives tokenization. Splitting them
+    yielded two bogus rooms, "Living" and "Room" (observed with the demo
+    integration on 0.8.12) — never the one the user actually has.
     """
     parts = entity_id.split(".")
     if len(parts) < 2:
         return []
-    name_part = parts[1]
-    tokens = re.split(r"[_.-]", name_part)
-    return [t.lower() for t in tokens if len(t) > 1]
+    raw = [t.lower() for t in re.split(r"[_.-]", parts[1]) if len(t) > 1]
+    tokens: list[str] = []
+    i = 0
+    while i < len(raw):
+        if i + 1 < len(raw) and raw[i + 1] == "room" and raw[i] != "room":
+            tokens.append(f"{raw[i]}_room")
+            i += 2
+            continue
+        tokens.append(raw[i])
+        i += 1
+    return tokens
+
+
+def _singularize(token: str) -> str:
+    """Best-effort English singular, so a plural inherits its singular's verdict.
+
+    The blocklist held "light" but not "lights", and light.kitchen_lights /
+    light.ceiling_lights are ubiquitous — enough to offer "Lights" as a room.
+    Checking both forms keeps the list singular-only instead of doubling it.
+    """
+    if token.endswith("ies") and len(token) > 4:
+        return f"{token[:-3]}y"
+    if token.endswith(("ses", "xes", "ches", "shes")):
+        return token[:-2]
+    if token.endswith("s") and not token.endswith("ss"):
+        return token[:-1]
+    return token
 
 
 def _is_room_token(token: str) -> bool:
-    """A token is a plausible room name if it is not a generic device/sensor word."""
-    return len(token) >= _MIN_TOKEN_LENGTH and token not in _IGNORED_TOKENS
+    """A token is a plausible room name if it is not a generic device/sensor word.
+
+    Also rejects the non-room vocabulary used for area names: if "garden" is not
+    a room when HA calls an area that, it is not a room when it appears in an
+    entity id either (valve.back_garden / valve.front_garden offered "Garden").
+    """
+    if len(token) < _MIN_TOKEN_LENGTH:
+        return False
+    for candidate in (token, _singularize(token)):
+        if candidate in _IGNORED_TOKENS or candidate in _NON_ROOM_TOKENS:
+            return False
+    return True
 
 
 # Cap pattern guesses so the onboarding UI doesn't drown in low-quality

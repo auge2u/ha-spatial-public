@@ -4346,7 +4346,7 @@ function Bh(n, t) {
         throw _t(et?.message ?? et?.code ?? "Could not update room geometry."), et;
     }
   }
-  const yn = "0.8.12";
+  const yn = "0.8.13";
   let zn = /* @__PURE__ */ Z(null), bn = /* @__PURE__ */ Z(null), xn = /* @__PURE__ */ Z(null), Oi = /* @__PURE__ */ Z(!1), Ii = /* @__PURE__ */ Z(!1);
   const L = /* @__PURE__ */ kt(() => u(zn) !== null && u(zn) !== yn);
   async function mt() {
