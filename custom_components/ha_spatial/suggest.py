@@ -72,16 +72,23 @@ _IGNORED_TOKENS = {
 # "Backup", "Automatic", "Last", "Home" and "Spatial" as rooms on a first-run
 # install. None of them is placed anywhere, so none survives this test.
 #
-# `sensor` is deliberately absent: it is where both real room telemetry AND
-# most non-physical bookkeeping live, so it cannot discriminate. A room with
-# genuinely nothing but sensors is not suggested — it is still reachable by
-# assigning an HA area, which outranks every pattern guess anyway.
+# `sensor` and `binary_sensor` are deliberately absent: both carry real room
+# telemetry AND a flood of device-attached bookkeeping, so neither can
+# discriminate. binary_sensor is the sharper trap of the two — the HA companion
+# app creates binary_sensor.<device>_focus and friends, so including it let
+# "Iphone" through as a room on any install with an iPhone paired, defeating the
+# device_tracker exclusion below. Fixtures worth naming a room after (lights,
+# switches, covers, climate, media players, ...) are never binary_sensors.
 #
-# Excluding `device_tracker` also settles the 'iphone' problem noted in
+# The cost is that a room evidenced ONLY by sensors is not suggested. It is
+# still reachable by assigning an HA area, which outranks every pattern guess
+# anyway.
+#
+# Excluding `device_tracker` settles the 'iphone' problem noted in
 # _pattern_confidence: phones and wearables move with their owner, so they
 # never evidence a room.
 _PLACED_DOMAINS = frozenset({
-    "light", "switch", "binary_sensor", "climate", "cover", "fan",
+    "light", "switch", "climate", "cover", "fan",
     "media_player", "vacuum", "lock", "camera", "humidifier", "water_heater",
     "valve", "siren", "lawn_mower",
 })
@@ -178,18 +185,33 @@ def _singularize(token: str) -> str:
     return token
 
 
+def _blocked(word: str) -> bool:
+    """True if a word is rejected by either vocabulary, in singular or plural."""
+    return any(
+        candidate in _IGNORED_TOKENS or candidate in _NON_ROOM_TOKENS
+        for candidate in (word, _singularize(word))
+    )
+
+
 def _is_room_token(token: str) -> bool:
     """A token is a plausible room name if it is not a generic device/sensor word.
 
     Also rejects the non-room vocabulary used for area names: if "garden" is not
     a room when HA calls an area that, it is not a room when it appears in an
     entity id either (valve.back_garden / valve.front_garden offered "Garden").
+
+    A merged "<head>_room" token is only as good as its head. The trailing
+    "room" is structural — checking the merged token as a whole matched neither
+    vocabulary, so merging smuggled "Demo Room", "Server Room" and "Backup Room"
+    past both blocklists even though demo/server/backup are in them.
     """
     if len(token) < _MIN_TOKEN_LENGTH:
         return False
-    for candidate in (token, _singularize(token)):
-        if candidate in _IGNORED_TOKENS or candidate in _NON_ROOM_TOKENS:
-            return False
+    if _blocked(token):
+        return False
+    head, sep, tail = token.rpartition("_")
+    if sep and tail == "room" and _blocked(head):
+        return False
     return True
 
 
