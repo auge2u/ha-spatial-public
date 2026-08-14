@@ -32,21 +32,41 @@ _IGNORED_TOKENS = {
     "alarm", "tamper", "water", "gas", "heat", "cold", "index", "number",
     "channel", "volume", "source", "media", "player", "receiver", "remote",
     "usb", "bluetooth", "thread", "mesh", "node", "bridge", "hub", "dongle",
-    # Backup / scheduler machinery. A stock HA ships several
-    # sensor.backup_last_*_automatic_backup entities, and because they live in
-    # the room-plausible `sensor` domain nothing else filters them — they were
-    # enough on their own to offer "Backup", "Automatic" and "Last" as rooms on
-    # a first-run install (observed in a live 0.8.10 instance).
-    "backup", "automatic", "scheduled", "attempted", "successful", "manager",
-    "next", "last", "previous", "schedule", "timer", "interval",
-    # Home Assistant's own surfaces: conversation.home_assistant, zone.home,
-    # todo.shopping_list, person.*, tts.google_translate_*.
-    "home", "assistant", "conversation", "todo", "shopping", "list", "person",
-    "admin", "user", "owner", "analytics", "cloud", "supervisor", "addon",
-    "tts", "stt", "assist", "pipeline", "google", "translate", "com",
-    # This integration's own entities (update.ha_spatial_update).
-    "spatial",
+    # Whole-house, never a single room. Earns its place because `home` DOES
+    # ride on placed entities and so survives the structural filter below:
+    # light.home_office_desk would otherwise suggest both "Home" and "Office".
+    "home",
 }
+
+# Domains whose entities are physically installed somewhere in the home. A
+# pattern token only names a room if it appears on at least one of these
+# (_has_placed_entity).
+#
+# This is the structural half of the filter, and it does the work a token
+# blocklist cannot: a stock HA ships sensor.backup_last_*_automatic_backup,
+# event.backup_automatic_backup, conversation.home_assistant, zone.home,
+# person.*, tts.* and update.ha_spatial_update, which between them offered
+# "Backup", "Automatic", "Last", "Home" and "Spatial" as rooms on a first-run
+# install. None of them is placed anywhere, so none survives this test.
+#
+# `sensor` is deliberately absent: it is where both real room telemetry AND
+# most non-physical bookkeeping live, so it cannot discriminate. A room with
+# genuinely nothing but sensors is not suggested — it is still reachable by
+# assigning an HA area, which outranks every pattern guess anyway.
+#
+# Excluding `device_tracker` also settles the 'iphone' problem noted in
+# _pattern_confidence: phones and wearables move with their owner, so they
+# never evidence a room.
+_PLACED_DOMAINS = frozenset({
+    "light", "switch", "binary_sensor", "climate", "cover", "fan",
+    "media_player", "vacuum", "lock", "camera", "humidifier", "water_heater",
+    "valve", "siren", "lawn_mower",
+})
+
+
+def _has_placed_entity(entity_ids: set[str]) -> bool:
+    """True if any entity id belongs to a physically-placed domain."""
+    return any(e.split(".", 1)[0] in _PLACED_DOMAINS for e in entity_ids)
 
 # Area names that are typically NOT rooms. An area with one of these names
 # (case-insensitive substring) is excluded from room suggestions. Conservative:
@@ -168,6 +188,11 @@ def suggest_rooms(
     sorted_tokens = sorted(token_entities.items(), key=lambda kv: (-len(kv[0]), kv[0]))
     for token, entity_ids in sorted_tokens:
         if len(entity_ids) < 2:
+            continue
+        # A token only evidences a room if something physically installed
+        # carries it. Bookkeeping entities (backup sensors, the conversation
+        # agent, persons, this integration's own update entity) never do.
+        if not _has_placed_entity(entity_ids):
             continue
         if any(token != kept and token in kept and entity_ids <= kept_entities
                for kept, kept_entities in kept_tokens.items()):
