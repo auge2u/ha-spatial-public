@@ -1,6 +1,6 @@
-import { K as St, b as It, I as At, X as C, J as ve, a1 as Le, P as s, z as Ct, Y as Pt, v as e, B as $, A as Lt, D as Ht, w as H, a as d, G as Dt, g as i, i as qe, r as M, W as a, Z as y, U as f, o as P, p as ie, u as v, q as Ge, k as Et, a0 as oe, Q as Ye, f as Ke, n as Vt, j as jt, C as Qe, T as Xe, R as Mt, m as Ot, l as Wt, x as Nt, H as Ut, d as Ze, y as Ft, O as Tt, c as $e } from "./ha-spatial-panel-D1fnh84z.js";
-import { p as Bt, R as Jt } from "./ha-spatial-panel-roomplan-import-Dv5pN-IS.js";
-import qt from "./ha-spatial-panel-Floorplan2D-BoAylUaI.js";
+import { K as St, b as It, I as At, X as C, J as ve, a1 as Le, P as s, z as Ct, Y as Pt, v as e, B as $, A as Lt, D as Ht, w as H, a as d, G as Dt, g as i, i as qe, r as M, W as a, Z as y, U as f, o as P, p as ie, u as v, q as Ge, k as Et, a0 as oe, Q as Ye, f as Ke, n as Vt, j as jt, C as Qe, T as Xe, R as Mt, m as Ot, l as Wt, x as Nt, H as Ut, d as Ze, y as Ft, O as Tt, c as $e } from "./ha-spatial-panel-7R_qzjSW.js";
+import { p as Bt, R as Jt } from "./ha-spatial-panel-roomplan-import-D6eAwOIk.js";
+import qt from "./ha-spatial-panel-Floorplan2D-B7qaVtui.js";
 function Gt(w) {
   const p = (/* @__PURE__ */ new Date()).toISOString(), j = w.sessionId || `vision-${Date.now()}`, r = w.photoFiles.map((u, W) => {
     const N = w.imageDimensions[W] || { width: 0, height: 0 }, le = N.width && N.height ? N.width / N.height : 1;

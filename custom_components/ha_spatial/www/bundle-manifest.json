@@ -1,9 +1,9 @@
 {
-  "panel": "ha-spatial-panel-D1fnh84z.js",
+  "panel": "ha-spatial-panel-7R_qzjSW.js",
   "konva": "ha-spatial-panel-konva-BolVosKQ.js",
-  "RoomCapture": "ha-spatial-panel-RoomCapture-DDxICB2X.js",
-  "Floorplan2D": "ha-spatial-panel-Floorplan2D-BoAylUaI.js",
-  "RoomImport": "ha-spatial-panel-RoomImport-CD-aN5_3.js",
-  "roomplan-import": "ha-spatial-panel-roomplan-import-Dv5pN-IS.js",
+  "RoomCapture": "ha-spatial-panel-RoomCapture-aEy5m94Y.js",
+  "Floorplan2D": "ha-spatial-panel-Floorplan2D-B7qaVtui.js",
+  "RoomImport": "ha-spatial-panel-RoomImport-MMXC4Sl7.js",
+  "roomplan-import": "ha-spatial-panel-roomplan-import-D6eAwOIk.js",
   "simulated-vision": "ha-spatial-panel-simulated-vision-D_G8pPNt.js"
 }

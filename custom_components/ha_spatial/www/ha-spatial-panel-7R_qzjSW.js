@@ -3538,21 +3538,21 @@ function Hf(e, t) {
         throw Bt(k?.message ?? k?.code ?? "Could not update room geometry."), k;
     }
   }
-  const mn = "0.10.0";
+  const mn = "0.11.0";
   let Yr = /* @__PURE__ */ R(null), xo = /* @__PURE__ */ R(null), yn = /* @__PURE__ */ R(null), wo = /* @__PURE__ */ R(!1), Eo = /* @__PURE__ */ R(!1), jt = /* @__PURE__ */ R(!1);
   const ko = /* @__PURE__ */ ae(() => f(Yr) !== null && f(Yr) !== mn);
   function na() {
-    return import("./ha-spatial-panel-Floorplan2D-BoAylUaI.js").catch((h) => {
+    return import("./ha-spatial-panel-Floorplan2D-B7qaVtui.js").catch((h) => {
       throw y(jt, !0), h;
     });
   }
   function oa() {
-    return import("./ha-spatial-panel-RoomCapture-DDxICB2X.js").catch((h) => {
+    return import("./ha-spatial-panel-RoomCapture-aEy5m94Y.js").catch((h) => {
       throw y(jt, !0), h;
     });
   }
   function ia() {
-    return import("./ha-spatial-panel-RoomImport-CD-aN5_3.js").catch((h) => {
+    return import("./ha-spatial-panel-RoomImport-MMXC4Sl7.js").catch((h) => {
       throw y(jt, !0), h;
     });
   }

@@ -1,7 +1,7 @@
 var x = Object.defineProperty;
 var _ = (e, t, n) => t in e ? x(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : e[t] = n;
 var y = (e, t, n) => _(e, typeof t != "symbol" ? t + "" : t, n);
-import { F as g } from "./ha-spatial-panel-D1fnh84z.js";
+import { F as g } from "./ha-spatial-panel-7R_qzjSW.js";
 class f extends Error {
   constructor(n, r) {
     super(r);
