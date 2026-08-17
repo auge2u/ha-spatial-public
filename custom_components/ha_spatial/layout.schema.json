@@ -2,16 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/auge2u/ha-forge-vista/custom_components/ha_spatial/layout.schema.json",
   "title": "HA Spatial Home Layout",
-  "description": "Canonical persisted/wire contract for a spatial home layout. Frozen at v1 by the 2026-06 eng review. Validated by BOTH the Python integration and the TypeScript panel (decision 4A). Conventions: snake_case keys (HA-native, matches area_id/floor_id/entity_id); all coordinates in real-world METERS; entity placements are a GLOBAL array each optionally linked to a room via room_id (decision T2, no mapping table); calibration is a distance-pair, never pixel-based.",
+  "description": "Canonical persisted/wire contract for a spatial home layout. Schema v1 with forward-tolerant reading (eng lock 2A/OV4, 2026-08): version accepts any integer >= 1 and unknown keys at layout root / room / placement level are PRESERVED, so a newer build's fields survive a validate->save round-trip on an older build. Validated by BOTH the Python integration and the TypeScript panel (decision 4A). Conventions: snake_case keys (HA-native, matches area_id/floor_id/entity_id); all coordinates in real-world METERS; entity placements are a GLOBAL array each optionally linked to a room via room_id (decision T2, no mapping table); calibration is a distance-pair, never pixel-based.",
   "type": "object",
-  "additionalProperties": false,
+  "additionalProperties": true,
   "required": ["id", "name", "version", "rooms", "placements", "created_at", "updated_at"],
   "properties": {
     "id": { "type": "string", "minLength": 1 },
     "name": { "type": "string" },
     "version": {
-      "const": 1,
-      "description": "Schema version. Bumped only with a matching Store async_migrate_func (decision 4A)."
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version. Any integer >= 1 is accepted (forward tolerance, eng lock 2A/OV4): unknown newer versions load with their unknown keys preserved. Bumped only with a matching Store async_migrate_func (decision 4A)."
     },
     "calibration": {
       "type": "object",
@@ -51,7 +52,7 @@
     },
     "room": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["id", "name", "area_id", "floor_id", "floor_level", "polygon", "height"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
@@ -110,7 +111,7 @@
     },
     "placement": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["entity_id", "room_id", "position", "rotation", "mount_type"],
       "properties": {
         "entity_id": {

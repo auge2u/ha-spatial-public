@@ -1,7 +1,8 @@
 """Funnel-event store for the First Room PMF loop.
 
-A SEPARATE, durable, capped event log — deliberately NOT in the layout store,
-whose schema is closed (additionalProperties: false). Writes are immediate (no
+A SEPARATE, durable, capped event log — deliberately NOT in the layout store
+(funnel telemetry is not layout data and must not ride the layout schema).
+Writes are immediate (no
 debounce) so a crash or restart does not lose the most recent conversion events,
 which is the whole point of measuring the funnel.
 

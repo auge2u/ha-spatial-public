@@ -12,6 +12,21 @@ STORAGE_VERSION = 1
 STORAGE_MINOR_VERSION = 1
 SAVE_DELAY = 2.0  # seconds; debounced disk writes (decision 12A)
 
+# Forward tolerance (eng lock 2A/OV4): the schema READS any integer version >= 1,
+# but this build WRITES only what it understands. Saving a layout whose version
+# exceeds KNOWN_LAYOUT_VERSION fails with typed error `unsupported_version`.
+KNOWN_LAYOUT_VERSION = 1
+
+# Layout revision ring (eng lock 1A/OV2/OV3): a SEPARATE store holding pre-edit
+# layout snapshots so a bug cannot wipe out the model. Ring writes happen
+# synchronously before the layout debounce proceeds.
+REVISIONS_STORAGE_KEY = f"{DOMAIN}.layout_revisions"
+REVISIONS_STORAGE_VERSION = 1
+REVISIONS_STORAGE_MINOR_VERSION = 1
+REVISION_RING_CAP = 20
+REVISION_RING_MAX_BYTES = 2 * 1024 * 1024  # 2 MB serialized budget
+REVISION_COALESCE_SECONDS = 60.0  # one revision per editing burst
+
 # Sidebar panel (decision 1A: real panel registration, replacing add_extra_js_url).
 PANEL_URL_PATH = "ha-spatial"
 PANEL_WEBCOMPONENT = "ha-spatial-panel"
@@ -61,6 +76,7 @@ FUNNEL_EVENTS = (
     "second_room_started",
     "rooms_suggested",
     "room_suggestion_selected",
+    "layout_restored",
 )
 
 # Durable scenes (T3/D3): defs persisted in our own store and materialized as
