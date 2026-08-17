@@ -1,3 +1,9 @@
 {
-  "panel": "ha-spatial-panel-DdlOD__T.js"
+  "panel": "ha-spatial-panel-D1fnh84z.js",
+  "konva": "ha-spatial-panel-konva-BolVosKQ.js",
+  "RoomCapture": "ha-spatial-panel-RoomCapture-DDxICB2X.js",
+  "Floorplan2D": "ha-spatial-panel-Floorplan2D-BoAylUaI.js",
+  "RoomImport": "ha-spatial-panel-RoomImport-CD-aN5_3.js",
+  "roomplan-import": "ha-spatial-panel-roomplan-import-Dv5pN-IS.js",
+  "simulated-vision": "ha-spatial-panel-simulated-vision-D_G8pPNt.js"
 }

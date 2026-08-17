@@ -2,8 +2,9 @@
 
 Replaces the previous add_extra_js_url (which injected a script into every HA
 page without registering a panel) with a real custom panel registered via
-panel_custom, admin-only in v0 (decision 6A). The served bundle is the
-placeholder today; the real editor lands with the panel build pipeline (M4).
+panel_custom, admin-only in v0 (decision 6A). The served bundles are the
+content-hashed panel entry + lazy chunks built from prototype/spatial-config
+(T9 code-splitting); the module URL comes from bundle-manifest.json.
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from homeassistant.components.http import StaticPathConfig
 
 from .const import (
     DOMAIN,
+    PANEL_HASHED_STATIC_URL,
     PANEL_ICON,
     PANEL_REQUIRE_ADMIN,
     PANEL_STATIC_URL,
@@ -36,6 +38,9 @@ _FALLBACK_PANEL_JS = "ha-spatial-panel.js"
 def _panel_js_url(static_dir: str) -> str:
     """Return the panel JS URL from the content-hashed bundle manifest.
 
+    Points at the cache-enabled static path (PANEL_HASHED_STATIC_URL): the
+    manifest maps to a content-hashed filename, so immutable caching is safe.
+    Lazy chunks import each other relatively, so they ride the same path.
     Falls back to the legacy un-hashed filename if the manifest is missing.
     """
     manifest_path = os.path.join(static_dir, _BUNDLE_MANIFEST)
@@ -46,17 +51,27 @@ def _panel_js_url(static_dir: str) -> str:
         filename = data.get("panel", filename)
     except (OSError, json.JSONDecodeError):
         pass
-    return f"{PANEL_STATIC_URL}/{filename}"
+    return f"{PANEL_HASHED_STATIC_URL}/{filename}"
 
 
 async def async_register_panel(hass: "HomeAssistant") -> None:
-    """Register the static asset path and the sidebar panel (idempotent)."""
+    """Register the static asset paths and the sidebar panel (idempotent)."""
     domain_data = hass.data.setdefault(DOMAIN, {})
 
     if not domain_data.get(_STATIC_REGISTERED):
         static_dir = os.path.join(os.path.dirname(__file__), "www")
+        # Two paths over the same dir (T9): PANEL_HASHED_STATIC_URL serves the
+        # content-hashed panel entry + chunks with cache headers ON (new build
+        # = new filenames via bundle-manifest.json, so a year-long immutable
+        # cache is safe); PANEL_STATIC_URL serves the un-hashed card bundle and
+        # fonts with cache headers OFF, since those URLs are stable across
+        # releases. The browser never fetches the manifest itself (panel.py
+        # reads it server-side).
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(PANEL_STATIC_URL, static_dir, False)]
+            [
+                StaticPathConfig(PANEL_STATIC_URL, static_dir, False),
+                StaticPathConfig(PANEL_HASHED_STATIC_URL, static_dir, True),
+            ]
         )
         domain_data[_STATIC_REGISTERED] = True
 

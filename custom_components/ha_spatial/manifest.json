@@ -8,14 +8,15 @@
     "websocket_api"
   ],
   "after_dependencies": [
-    "frontend"
+    "frontend",
+    "ai_task"
   ],
   "codeowners": [
     "@auge2u"
   ],
   "iot_class": "local_push",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "requirements": [],
   "config_flow": true,
-  "homeassistant": "2025.5.0"
+  "homeassistant": "2025.9.0"
 }

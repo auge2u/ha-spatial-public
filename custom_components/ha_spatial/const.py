@@ -31,6 +31,12 @@ REVISION_COALESCE_SECONDS = 60.0  # one revision per editing burst
 PANEL_URL_PATH = "ha-spatial"
 PANEL_WEBCOMPONENT = "ha-spatial-panel"
 PANEL_STATIC_URL = "/ha_spatial_static"
+# Same www/ dir served a second time WITH long-lived cache headers (T9): the
+# panel entry and lazy chunks are content-hashed, so immutable caching is safe
+# and the browser revalidates nothing between upgrades. The un-hashed card
+# bundle and fonts stay on PANEL_STATIC_URL (no far-future cache) because
+# their URLs are stable across releases.
+PANEL_HASHED_STATIC_URL = "/ha_spatial_hashed"
 
 
 def _read_manifest_version() -> str:
@@ -87,11 +93,18 @@ SCENES_STORAGE_VERSION = 1
 
 # Vision provider (D4/D9/Codex#7) — OFF the PMF critical path. Pluggable: the
 # key stays server-side (D4); the provider is chosen via the options flow.
+# "ai_task" is the local-first tier (eng lock 3A): a structured vision task
+# through HA's own ai_task integration, which owns provider/model/locality.
 CONF_VISION_PROVIDER = "vision_provider"
 CONF_VISION_API_KEY = "vision_api_key"
 CONF_VISION_MODEL = "vision_model"
 CONF_VISION_TIMEOUT = "vision_timeout"
-VISION_PROVIDERS = ("simulated", "grok")
+# One-time informed acknowledgment for the ai_task tier (codex adversarial #1):
+# HA owns ai_task routing, so the "local" class can still be cloud-backed. The
+# user either stores this acknowledgment in the options flow or gives
+# per-analysis consent — without one of them, analyze fails consent_required.
+CONF_VISION_AI_TASK_ACK = "vision_ai_task_ack"
+VISION_PROVIDERS = ("simulated", "ai_task", "grok")
 DEFAULT_VISION_PROVIDER = "simulated"
 DEFAULT_VISION_MODEL = "grok-2-vision-latest"
 DEFAULT_VISION_TIMEOUT = 30

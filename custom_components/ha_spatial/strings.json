@@ -9,5 +9,23 @@
     "abort": {
       "single_instance_allowed": "Already configured. Only a single instance of HA Spatial is allowed."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Vision provider",
+        "description": "Pick how room photos are analyzed. `simulated` never leaves this device, `ai_task` uses Home Assistant's own AI task integration (local-first), `grok` sends photos to a cloud service and always asks for consent first.\n\nLocal tier status: {ai_task_status}",
+        "data": {
+          "vision_provider": "Vision provider",
+          "vision_api_key": "Cloud API key (grok only — stored on this server)",
+          "vision_model": "Cloud model",
+          "vision_timeout": "Vision timeout (seconds)",
+          "vision_ai_task_ack": "I understand where ai_task sends my room photos"
+        },
+        "data_description": {
+          "vision_ai_task_ack": "Required for the ai_task tier: room photos are sent to the AI task provider configured in your Home Assistant ({ai_task_entity}), which may be a cloud provider. Leave unchecked to be asked before each analysis instead. If you change your AI task entity later, you'll be asked again."
+        }
+      }
+    }
   }
 }
